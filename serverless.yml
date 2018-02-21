@@ -1,0 +1,148 @@
+service: car-pooling-api
+
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+# Configuration variables
+custom:
+  secrets: ${file(secrets.json)}
+  
+provider:
+  name: aws
+  runtime: nodejs4.3
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    JWT_SECRET: ${self:custom.secrets.jwtSecret}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:*"
+
+functions:
+  auth:
+    handler: handler.auth
+
+  login:
+    handler: login/login.login
+    events:
+      - http:
+          path: login
+          method: post
+          cors: true
+
+
+  create:
+    handler: users/create.create
+    events:
+      - http:
+          path: users
+          method: post
+          cors: true
+
+  list:
+    handler: users/list.list
+    events:
+      - http:
+          path: users
+          method: get
+          cors: true
+
+  get:
+    handler: users/get.get
+    events:
+      - http:
+          path: users/{id}
+          method: get
+          cors: true
+
+  update:
+    handler: users/update.update
+    events:
+      - http:
+          path: users/{id}
+          method: put
+          cors: true
+
+  delete:
+    handler: users/delete.delete
+    events:
+      - http:
+          path: users/{id}
+          method: delete
+          cors: true
+  createRide:
+    handler: rides/create.create
+    events:
+      - http:
+          authorizer: auth
+          path: rides
+          method: post
+          cors:
+             origins:
+               - '*'
+             headers:
+               - Content-Type
+               - X-Amz-Date
+               - Authorization
+               - X-Api-Key
+               - X-Amz-Security-Token
+  listRide:
+    handler: rides/list.list
+    events:
+      - http:
+          authorizer: auth
+          path: rides
+          method: get
+          cors:
+             origins:
+               - '*'
+             headers:
+               - Content-Type
+               - X-Amz-Date
+               - Authorization
+               - X-Api-Key
+               - X-Amz-Security-Token
+resources:
+  Resources:
+    RidesDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: rides
+
+    UsersDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+
+	  
+
+

@@ -1,0 +1,11 @@
+#######create user###########
+https://n7bjkx1gch.execute-api.us-east-1.amazonaws.com/dev/users
+POST
+body:{ "text": "test_create_1",
+"name":"damith"}
+
+########get users(list)#############
+https://n7bjkx1gch.execute-api.us-east-1.amazonaws.com/dev/users
+GET
+
+#########create Ride###############
